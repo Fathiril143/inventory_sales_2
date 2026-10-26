@@ -25,6 +25,7 @@
         <select id="role" name="role" required style="padding: .7rem;">
             <option value="staff" @selected(old('role', 'staff') === 'staff')>Staff</option>
             <option value="admin" @selected(old('role') === 'admin')>Admin / Owner</option>
+            <option value="customer" @selected(old('role') === 'customer')>Customer / Pelanggan (Tanpa Perlu Login)</option>
         </select>
         @error('role') <p style="color: #b91c1c;">{{ $message }}</p> @enderror
 

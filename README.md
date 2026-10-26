@@ -47,14 +47,16 @@ Aplikasi web Laravel untuk mengelola data produk, pemasok, pembelian stok, dan p
 
 8. Buka `http://127.0.0.1:8000` di browser.
 
-## Akun demo
+## Akun demo & Akses Peran
 
-| Role | Email | Kata sandi |
+| Role | Kredensial / Akses | Keterangan |
 | --- | --- | --- |
-| Admin / Owner | `admin@inventory.test` | `admin12345` |
-| Staff | `staff@inventory.test` | `staff12345` |
+| Admin / Owner | `admin@inventory.test` \| `admin12345` | Kelola produk, kategori, pemasok, transaksi, dan akun pengguna. |
+| Staff | `staff@inventory.test` \| `staff12345` | Kelola produk dan transaksi pembelian serta penjualan. |
+| Customer / Pelanggan | **Tanpa Login** (Buka `/` atau klik tombol di halaman `/login`) | Melihat katalog produk dan memesan barang langsung tanpa perlu login. |
+| Customer (Akun Demo) | `customer@inventory.test` \| `customer12345` | Akun demo opsional jika ingin sesi akun pelanggan. |
 
-Akun tersebut hanya untuk demonstrasi lokal. Seeder membuat atau memperbarui akun demo saat `php artisan db:seed` dijalankan.
+Akun tersebut hanya untuk demonstrasi lokal. Seeder membuat atau memperbarui akun demo saat `php artisan db:seed` dijalankan. Pengunjung toko (Customer) dapat langsung berbelanja tanpa perlu login melalui katalog utama (`/`) atau tombol **Masuk sebagai Customer (Tanpa Login)** pada halaman login.
 
 ## Fitur
 
@@ -71,10 +73,41 @@ Akun tersebut hanya untuk demonstrasi lokal. Seeder membuat atau memperbarui aku
 - Detail pembelian dan penjualan.
 - Katalog produk publik yang dapat dibuka pelanggan tanpa login.
 - Pesanan pelanggan tanpa akun dengan validasi stok dan pencatatan kontak.
+- **Mock Payment Gateway (100% Localhost):** Antarmuka modern ala Midtrans Snap & Xendit untuk Virtual Account (BCA, Mandiri, BNI, BRI, BSI), QRIS Dinamis, E-Wallet (GoPay, DANA, OVO), dan Transfer Bank Manual.
+- **Panel Simulasi Demo UAS:** Tombol callback instan pembayaran lunas (Instant Paid) & simulasi waktu habis (Expired) dengan pengembalian stok otomatis.
+- **Struk / Invoice Resmi (Print-friendly / PDF):** Cetak invoice dengan cap watermark LUNAS/PAID.
+- **Verifikasi Bukti Transfer Staff:** Upload struk/tangkapan layar transfer dan approval/reject manual oleh Staff kasir/gudang.
+- **Alur Gudang & Fulfillment:** Status pemrosesan dan pengiriman barang hanya dapat dijalankan jika status pembayaran telah LUNAS.
+- **Kasir / POS Langsung (Staff):** Pilihan pembayaran Tunai (dengan kalkulator kembalian otomatis) dan QRIS langsung di meja kasir.
+- **Dashboard Keuangan & Laporan Transaksi (Admin):** Statistik omset lunas, pending, grafik breakdown metode bayar, dan laporan keuangan cetak berformat resmi dengan tanda tangan pengesahan UAS.
 
-## Katalog pelanggan
+## Panduan Demo Presentasi UAS (Payment Gateway)
 
-Pelanggan dapat membuka halaman awal untuk mencari produk yang stoknya tersedia, memilih beberapa produk, lalu membuat pesanan tanpa akun. Nama dan nomor kontak dicatat pada transaksi, stok diperiksa dan dikurangi secara atomik, dan nomor pesanan ditampilkan setelah berhasil. Pembayaran online tidak termasuk.
+1. Buka katalog customer di `http://127.0.0.1:8000` atau klik **"Buat Pesanan"** (`/pesan`).
+2. Masukkan data pesanan, pilih produk, lalu pilih salah satu metode pembayaran:
+   - **QRIS Instan**: Membuka layar QR Code dinamis dengan logo QRIS dan batas waktu pembayaran.
+   - **Virtual Account (BCA/Mandiri/BNI/BRI/BSI)**: Menampilkan nomor VA unik yang dapat disalin beserta petunjuk M-Banking, ATM, dan Internet Banking.
+   - **Transfer Bank Manual**: Menampilkan rekening toko dan form upload bukti transfer (JPG/PNG/PDF).
+3. **Di Halaman Payment Gateway (`/payment/{INV-XXXX}`):**
+   - Tunjukkan Countdown Timer 24 jam yang berjalan realtime.
+   - Klik tombol **⚡ Simulasi Bayar Berhasil (Instant Callback / Paid)** pada panel demo UAS:
+     - Sistem langsung memicu callback internal tanpa API pihak ketiga.
+     - Status berubah menjadi **LUNAS (Paid)** secara realtime.
+     - Muncul modal animasi sukses dan tombol cetak invoice resmi.
+   - Klik **🖨️ Cetak / Unduh Struk Lunas** untuk memperlihatkan invoice ber-watermark *"LUNAS / PAID"*.
+4. **Demonstrasi Kasus Timeout / Expired:**
+   - Buat pesanan baru, lalu klik **⏳ Simulasi Waktu Habis (Expired)**.
+   - Status tagihan berubah menjadi Kedaluwarsa dan stok barang yang tertahan otomatis dikembalikan ke inventaris.
+5. **Demonstrasi Verifikasi Manual Staff & Pengiriman Gudang:**
+   - Pilih metode Transfer Manual & unggah foto bukti transfer.
+   - Login sebagai Staff (`staff@inventory.test` | `staff12345`), buka menu **Kelola Penjualan** (`/sales`).
+   - Buka detail pesanan, tinjau foto bukti pembayaran, lalu klik **✓ Terima & Setujui Pembayaran**.
+   - Perhatikan tombol alur gudang: Staff sekarang dapat menekan tombol **Mulai Kemas Barang (Processing)** dan **Kirim Barang (Shipped)** karena pembayaran sudah lunas.
+6. **Demonstrasi Dashboard Keuangan & Laporan Admin:**
+   - Login sebagai Admin (`admin@inventory.test` | `admin12345`).
+   - Buka **Dashboard** untuk melihat total pendapatan lunas, pending, dan rincian transaksi per metode (QRIS, VA, E-Wallet, Transfer Manual, Kasir Tunai).
+   - Buka **Kelola Channel Pembayaran** (`/admin/payment-channels`) untuk mendemokan fitur on/off channel dan perubahan nomor rekening.
+   - Buka **Laporan Keuangan Transaksi** (`/admin/payment-reports`) dan klik tombol **Cetak / Unduh Laporan (PDF)** untuk memperlihatkan lembar pengesahan UAS bertanda tangan dosen penguji.
 
 ## Aturan data dan transaksi
 

@@ -27,7 +27,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:admin,staff'],
+            'role' => ['required', 'in:admin,staff,customer'],
         ]);
 
         User::create($validated);
@@ -48,7 +48,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:admin,staff'],
+            'role' => ['required', 'in:admin,staff,customer'],
         ]);
 
         if ($request->user()->is($user) && $validated['role'] !== 'admin') {

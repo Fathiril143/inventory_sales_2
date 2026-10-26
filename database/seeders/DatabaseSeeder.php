@@ -29,5 +29,16 @@ class DatabaseSeeder extends Seeder
                 'role' => 'staff',
             ],
         );
+
+        User::updateOrCreate(
+            ['email' => 'customer@inventory.test'],
+            [
+                'name' => 'Demo Customer',
+                'password' => 'customer12345',
+                'role' => 'customer',
+            ],
+        );
+
+        $this->call(PaymentChannelSeeder::class);
     }
 }

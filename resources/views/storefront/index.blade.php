@@ -8,9 +8,41 @@
 </head>
 <body class="storefront-page">
     <header class="storefront-header">
-        <a class="storefront-brand" href="{{ route('storefront.index') }}">Inventory <span>&amp;</span> Sales</a>
-        <nav><a href="{{ route('login') }}">Masuk Admin / Staff</a></nav>
+        <div class="storefront-brand-wrapper">
+            <a class="storefront-brand" href="{{ route('storefront.index') }}">Inventory <span>&amp;</span> Sales</a>
+            @if (auth()->check())
+                @if (auth()->user()->role === 'customer')
+                    <span class="badge-role-guest">🟢 Akun: Customer</span>
+                @else
+                    <span class="badge-role-guest">🟢 Pratinjau Toko ({{ ucfirst(auth()->user()->role) }})</span>
+                @endif
+            @else
+                <span class="badge-role-guest">🟢 Akun: Customer (Tanpa Login)</span>
+            @endif
+        </div>
+        <nav class="storefront-nav">
+            <a href="{{ route('storefront.create') }}" class="storefront-nav-order">🛒 Buat Pesanan</a>
+            @if (auth()->check())
+                @if (in_array(auth()->user()->role, ['admin', 'staff']))
+                    <a class="nav-login-link" href="{{ route('dashboard') }}">Dashboard →</a>
+                @endif
+                <span class="user-pill">{{ auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})</span>
+                <form method="POST" action="{{ route('logout') }}" style="display:inline; margin:0;">
+                    @csrf
+                    <button type="submit" class="nav-logout-btn">Keluar</button>
+                </form>
+            @else
+                <a class="nav-login-link" href="{{ route('login') }}">Login Admin / Staff →</a>
+            @endif
+        </nav>
     </header>
+
+    @if (session('customer_notice'))
+        <div class="storefront-notice-bar" role="status">
+            <span>✨ {{ session('customer_notice') }}</span>
+        </div>
+    @endif
+
     <main class="storefront-container">
         <section class="storefront-hero">
             <span class="eyebrow">KATALOG PRODUK</span>

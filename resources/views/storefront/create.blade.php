@@ -8,8 +8,32 @@
 </head>
 <body class="storefront-page">
     <header class="storefront-header">
-        <a class="storefront-brand" href="{{ route('storefront.index') }}">Inventory <span>&amp;</span> Sales</a>
-        <nav><a href="{{ route('login') }}">Masuk Admin / Staff</a></nav>
+        <div class="storefront-brand-wrapper">
+            <a class="storefront-brand" href="{{ route('storefront.index') }}">Inventory <span>&amp;</span> Sales</a>
+            @if (auth()->check())
+                @if (auth()->user()->role === 'customer')
+                    <span class="badge-role-guest">🟢 Akun: Customer</span>
+                @else
+                    <span class="badge-role-guest">🟢 Pratinjau Toko ({{ ucfirst(auth()->user()->role) }})</span>
+                @endif
+            @else
+                <span class="badge-role-guest">🟢 Akun: Customer (Tanpa Login)</span>
+            @endif
+        </div>
+        <nav class="storefront-nav">
+            @if (auth()->check())
+                @if (in_array(auth()->user()->role, ['admin', 'staff']))
+                    <a class="nav-login-link" href="{{ route('dashboard') }}">Dashboard →</a>
+                @endif
+                <span class="user-pill">{{ auth()->user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" style="display:inline; margin:0;">
+                    @csrf
+                    <button type="submit" class="nav-logout-btn">Keluar</button>
+                </form>
+            @else
+                <a class="nav-login-link" href="{{ route('login') }}">Login Admin / Staff →</a>
+            @endif
+        </nav>
     </header>
     <main class="storefront-container storefront-order-container">
         <a class="back-link" href="{{ route('storefront.index') }}">← Kembali ke katalog</a>
@@ -30,7 +54,7 @@
                 <section class="order-panel">
                     <h2>Kontak pelanggan</h2>
                     <div class="customer-fields">
-                        <label>Nama<input name="customer_name" type="text" value="{{ old('customer_name') }}" maxlength="120" required autocomplete="name" placeholder="Nama kamu"></label>
+                        <label>Nama<input name="customer_name" type="text" value="{{ old('customer_name', auth()->user()?->name) }}" maxlength="120" required autocomplete="name" placeholder="Nama kamu"></label>
                         <label>Nomor HP / WhatsApp<input name="customer_phone" type="tel" value="{{ old('customer_phone') }}" maxlength="30" required autocomplete="tel" placeholder="Contoh: 08xx atau +62"></label>
                     </div>
                 </section>
@@ -48,7 +72,105 @@
                     </div>
                     <button type="button" id="add-customer-order-row" class="secondary-button">+ Tambah produk</button>
                 </section>
-                <div class="order-submit-row"><p>Pesanan mengurangi stok setelah berhasil disimpan. Pembayaran dilakukan langsung dengan toko.</p><button type="submit">Kirim pesanan</button></div>
+                <section class="order-panel payment-select-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Pilih Metode Pembayaran</h2>
+                            <p>Tersedia metode pembayaran instan otomatis (QRIS & Virtual Account) dan transfer manual.</p>
+                        </div>
+                    </div>
+                    @php($groupedChannels = $groupedChannels ?? ($paymentChannels ?? collect())->groupBy('category'))
+                    @php($selectedChannel = old('payment_channel', 'qris'))
+
+                    @if ($groupedChannels->has('qris'))
+                        <div class="payment-group">
+                            <span class="payment-group-title">⚡ QRIS Instan (Rekomendasi)</span>
+                            <div class="payment-options-grid">
+                                @foreach ($groupedChannels['qris'] as $ch)
+                                    <label class="payment-option-card {{ $selectedChannel == $ch->code ? 'active' : '' }}">
+                                        <input type="radio" name="payment_channel" value="{{ $ch->code }}" @checked($selectedChannel == $ch->code) required>
+                                        <div class="payment-card-body">
+                                            <div class="payment-card-header">
+                                                <span class="payment-badge-qris">QRIS</span>
+                                                <span class="payment-title">{{ $ch->name }}</span>
+                                            </div>
+                                            <p class="payment-desc">Scan via BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay</p>
+                                            <div class="payment-fee-tag">Bebas Biaya Admin · Instan</div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($groupedChannels->has('va'))
+                        <div class="payment-group">
+                            <span class="payment-group-title">🏦 Virtual Account Bank (Verifikasi Otomatis)</span>
+                            <div class="payment-options-grid">
+                                @foreach ($groupedChannels['va'] as $ch)
+                                    <label class="payment-option-card {{ $selectedChannel == $ch->code ? 'active' : '' }}">
+                                        <input type="radio" name="payment_channel" value="{{ $ch->code }}" @checked($selectedChannel == $ch->code) required>
+                                        <div class="payment-card-body">
+                                            <div class="payment-card-header">
+                                                <span class="payment-icon-pill" style="border-left: 3px solid {{ $ch->color ?: '#005baa' }};">{{ strtoupper(str_replace('_va', '', $ch->code)) }}</span>
+                                                <span class="payment-title">{{ $ch->name }}</span>
+                                            </div>
+                                            <p class="payment-desc">Nomor VA unik diterbitkan otomatis. Konfirmasi realtime.</p>
+                                            <div class="payment-fee-tag">Verifikasi 24 Jam Otomatis</div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($groupedChannels->has('ewallet'))
+                        <div class="payment-group">
+                            <span class="payment-group-title">📱 Dompet Digital / E-Wallet</span>
+                            <div class="payment-options-grid">
+                                @foreach ($groupedChannels['ewallet'] as $ch)
+                                    <label class="payment-option-card {{ $selectedChannel == $ch->code ? 'active' : '' }}">
+                                        <input type="radio" name="payment_channel" value="{{ $ch->code }}" @checked($selectedChannel == $ch->code) required>
+                                        <div class="payment-card-body">
+                                            <div class="payment-card-header">
+                                                <span class="payment-icon-pill" style="border-left: 3px solid {{ $ch->color ?: '#118eea' }};">{{ strtoupper($ch->code) }}</span>
+                                                <span class="payment-title">{{ $ch->name }}</span>
+                                            </div>
+                                            <p class="payment-desc">Bayar cepat langsung dari aplikasi {{ $ch->name }}.</p>
+                                            <div class="payment-fee-tag">Bebas Biaya Transaksi</div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($groupedChannels->has('manual_transfer'))
+                        <div class="payment-group">
+                            <span class="payment-group-title">📝 Transfer Bank Manual (Upload Bukti Bayar)</span>
+                            <div class="payment-options-grid">
+                                @foreach ($groupedChannels['manual_transfer'] as $ch)
+                                    <label class="payment-option-card {{ $selectedChannel == $ch->code ? 'active' : '' }}">
+                                        <input type="radio" name="payment_channel" value="{{ $ch->code }}" @checked($selectedChannel == $ch->code) required>
+                                        <div class="payment-card-body">
+                                            <div class="payment-card-header">
+                                                <span class="payment-icon-pill" style="border-left: 3px solid {{ $ch->color ?: '#16a34a' }};">MANUAL</span>
+                                                <span class="payment-title">{{ $ch->name }}</span>
+                                            </div>
+                                            <p class="payment-desc">Rek: {{ $ch->account_number }} a.n {{ $ch->account_name }}</p>
+                                            <div class="payment-fee-tag">Verifikasi oleh Petugas Toko</div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </section>
+
+                <div class="order-submit-row">
+                    <p>Setelah menekan tombol di bawah, Anda akan diarahkan ke halaman <strong>Payment Gateway</strong> untuk instruksi dan simulasi pembayaran.</p>
+                    <button type="submit" id="submit-order-btn">Lanjut ke Pembayaran →</button>
+                </div>
             </form>
             <template id="customer-order-row-template">
                 <div class="customer-order-row">
@@ -81,6 +203,13 @@
                 });
                 orderItemList.addEventListener('click', (event) => {
                     if (event.target.matches('.remove-order-row') && orderItemList.querySelectorAll('.customer-order-row').length > 1) event.target.closest('.customer-order-row').remove();
+                });
+
+                document.querySelectorAll('input[name="payment_channel"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        document.querySelectorAll('.payment-option-card').forEach(c => c.classList.remove('active'));
+                        radio.closest('.payment-option-card')?.classList.add('active');
+                    });
                 });
             </script>
         @endif

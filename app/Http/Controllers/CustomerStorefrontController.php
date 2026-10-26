@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PaymentChannel;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,13 @@ use Illuminate\View\View;
 
 class CustomerStorefrontController extends Controller
 {
+    protected PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -40,7 +49,14 @@ class CustomerStorefrontController extends Controller
             ->orderBy('name')
             ->get(['id', 'sku', 'name', 'stock', 'selling_price']);
 
-        return view('storefront.create', compact('products'));
+        $paymentChannels = PaymentChannel::active()
+            ->where('category', '!=', 'cash')
+            ->orderBy('sort_order')
+            ->get();
+
+        $groupedChannels = $paymentChannels->groupBy('category');
+
+        return view('storefront.create', compact('products', 'paymentChannels', 'groupedChannels'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -48,23 +64,28 @@ class CustomerStorefrontController extends Controller
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
             'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[0-9+() .-]+$/'],
+            'payment_channel' => ['required', 'string', 'exists:payment_channels,code'],
             'items' => ['required', 'array', 'min:1', 'max:20'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
         ], [
             'customer_phone.regex' => 'Nomor kontak hanya boleh berisi angka, spasi, dan tanda + - ( ).',
+            'payment_channel.required' => 'Pilih salah satu metode pembayaran yang diinginkan.',
+            'payment_channel.exists' => 'Metode pembayaran yang dipilih tidak tersedia.',
         ]);
 
         $items = collect($validated['items'])->sortBy('product_id');
 
-        $sale = DB::transaction(function () use ($items, $validated) {
+        $payment = DB::transaction(function () use ($items, $validated) {
             $sale = Sale::create([
-                'user_id' => null,
+                'user_id' => auth()->id(),
                 'customer_name' => $validated['customer_name'],
                 'customer_phone' => $validated['customer_phone'],
                 'sale_number' => 'PJ-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
                 'total' => 0,
-                'status' => 'completed',
+                'status' => 'pending',
+                'payment_status' => 'pending',
+                'fulfillment_status' => 'unfulfilled',
                 'sold_at' => now(),
             ]);
 
@@ -90,16 +111,22 @@ class CustomerStorefrontController extends Controller
                     'subtotal' => number_format($subtotalCents / 100, 2, '.', ''),
                 ]);
 
+                // Hold stock for this transaction
                 $product->decrement('stock', $quantity);
                 $totalCents += $subtotalCents;
             }
 
             $sale->update(['total' => number_format($totalCents / 100, 2, '.', '')]);
 
-            return $sale;
+            // Create Payment record via PaymentService
+            $payment = $this->paymentService->createPaymentForSale($sale, $validated['payment_channel']);
+
+            return $payment;
         });
 
-        return redirect()->route('storefront.thank-you')->with('orderNumber', $sale->sale_number);
+        // Redirect directly to the modern payment gateway checkout
+        return redirect()->route('payment.show', $payment->reference_number)
+            ->with('info', 'Pesanan Anda berhasil dibuat! Silakan selesaikan pembayaran sesuai instruksi di bawah ini.');
     }
 
     public function thankYou(Request $request): View|RedirectResponse
