@@ -30,7 +30,7 @@
             <tr>
                 <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Nomor</th>
                 <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Tanggal</th>
-                <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Kasir</th>
+                <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Kasir / Pelanggan</th>
                 <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Jenis Produk</th>
                 <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Total</th>
                 <th style="padding: .7rem; border-bottom: 1px solid #cbd5e1;">Status</th>
@@ -41,7 +41,7 @@
                 <tr>
                     <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;"><a href="{{ route('sales.show', $sale) }}">{{ $sale->sale_number }}</a></td>
                     <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">{{ $sale->sold_at->format('d/m/Y H:i') }}</td>
-                    <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">{{ $sale->user->name }}</td>
+                    <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">{{ $sale->user?->name ?? $sale->customer_name ?? 'Pelanggan tanpa akun' }}</td>
                     <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">{{ $sale->items_count }}</td>
                     <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">Rp {{ number_format((float) $sale->total, 0, ',', '.') }}</td>
                     <td style="padding: .7rem; border-bottom: 1px solid #e2e8f0;">{{ ucfirst($sale->status) }}</td>

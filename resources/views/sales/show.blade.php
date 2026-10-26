@@ -10,7 +10,10 @@
     <p><a href="{{ route('sales.index') }}">← Kembali ke Penjualan</a></p>
     <h1>Detail Penjualan</h1>
     <p><strong>Nomor:</strong> {{ $sale->sale_number }}</p>
-    <p><strong>Kasir:</strong> {{ $sale->user->name }}</p>
+    <p><strong>Kasir / Pelanggan:</strong> {{ $sale->user?->name ?? $sale->customer_name ?? 'Pelanggan tanpa akun' }}</p>
+    @if ($sale->customer_phone)
+        <p><strong>Kontak pelanggan:</strong> {{ $sale->customer_phone }}</p>
+    @endif
     <p><strong>Tanggal:</strong> {{ $sale->sold_at->format('d/m/Y H:i') }}</p>
     <p><strong>Status:</strong> {{ ucfirst($sale->status) }}</p>
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerStorefrontController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
@@ -10,7 +11,12 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/', [CustomerStorefrontController::class, 'index'])->name('storefront.index');
+Route::get('/pesan', [CustomerStorefrontController::class, 'create'])->name('storefront.create');
+Route::post('/pesan', [CustomerStorefrontController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('storefront.store');
+Route::get('/pesanan-selesai', [CustomerStorefrontController::class, 'thankYou'])->name('storefront.thank-you');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');

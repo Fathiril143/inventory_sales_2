@@ -69,6 +69,12 @@ Akun tersebut hanya untuk demonstrasi lokal. Seeder membuat atau memperbarui aku
 - Dashboard berisi ringkasan produk, transaksi, penjualan, dan stok rendah.
 - Filter tanggal dan status pada daftar transaksi.
 - Detail pembelian dan penjualan.
+- Katalog produk publik yang dapat dibuka pelanggan tanpa login.
+- Pesanan pelanggan tanpa akun dengan validasi stok dan pencatatan kontak.
+
+## Katalog pelanggan
+
+Pelanggan dapat membuka halaman awal untuk mencari produk yang stoknya tersedia, memilih beberapa produk, lalu membuat pesanan tanpa akun. Nama dan nomor kontak dicatat pada transaksi, stok diperiksa dan dikurangi secara atomik, dan nomor pesanan ditampilkan setelah berhasil. Pembayaran online tidak termasuk.
 
 ## Aturan data dan transaksi
 
